@@ -49,7 +49,7 @@ pub fn part2(input: &str) -> usize {
     houses.len()
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
