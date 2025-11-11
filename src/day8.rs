@@ -36,10 +36,28 @@ pub fn part1(input: &str) -> usize {
     total_code_chars - total_memory_chars
 }
 
-// #[aoc(day8, part2)]
-// pub fn part2(input: &str) -> usize {
-
-// }
+#[aoc(day8, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut total_code_chars = 0;
+    let mut total_encoded_chars = 0;
+    for line in input.lines() {
+        let code_chars = line.len();
+        total_code_chars += code_chars;
+        let mut encoded_chars = 2; // for the new surrounding quotes
+        for c in line.chars() {
+            match c {
+                '"' | '\\' => {
+                    encoded_chars += 2;
+                }
+                _ => {
+                    encoded_chars += 1;
+                }
+            }
+        }
+        total_encoded_chars += encoded_chars;
+    }
+    total_encoded_chars - total_code_chars
+}
 
 #[cfg(test)]
 mod tests {
@@ -55,5 +73,17 @@ mod tests {
 "
         .trim();
         assert_eq!(part1(input), 12);
+    }
+
+    #[test]
+    fn example_2() {
+        let input = "
+\"\"
+\"abc\"
+\"aaa\\\"aaa\"
+\"\\x27\"
+"
+        .trim();
+        assert_eq!(part2(input), 19);
     }
 }
