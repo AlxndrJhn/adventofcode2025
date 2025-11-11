@@ -51,8 +51,11 @@ pub fn part1(password: &str) -> String {
     }
 }
 
-// #[aoc(day11, part2)]
-// pub fn part2(input: &str) -> usize {}
+#[aoc(day11, part2)]
+pub fn part2(input: &str) -> String {
+    let first_password = part1(input);
+    part1(&first_password)
+}
 
 #[cfg(test)]
 mod tests {
