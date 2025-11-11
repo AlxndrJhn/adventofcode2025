@@ -115,8 +115,22 @@ pub fn part1(input: &str) -> usize {
     *signals.get("a").unwrap()
 }
 
-// #[aoc(day7, part2)]
-// pub fn part2(input: &str) -> usize {}
+#[aoc(day7, part2)]
+pub fn part2(input: &str) -> usize {
+    let signals = resolve_wire_signal(input);
+    let result = *signals.get("a").unwrap();
+    let mut modified_input = String::new();
+    for line in input.trim().lines() {
+        if line.ends_with("-> b") {
+            modified_input.push_str(&format!("{} -> b\n", result));
+        } else {
+            modified_input.push_str(line);
+            modified_input.push('\n');
+        }
+    }
+    let new_signals = resolve_wire_signal(&modified_input);
+    *new_signals.get("a").unwrap()
+}
 
 #[cfg(test)]
 mod tests {
