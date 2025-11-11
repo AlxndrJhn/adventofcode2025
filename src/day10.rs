@@ -27,8 +27,14 @@ pub fn part1(input: &str) -> usize {
     current.to_string().len()
 }
 
-// #[aoc(day10, part2)]
-// pub fn part2(input: &str) -> usize {}
+#[aoc(day10, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut current = input.trim();
+    for _ in 0..50 {
+        current = one_step(current);
+    }
+    current.to_string().len()
+}
 
 #[cfg(test)]
 mod tests {
