@@ -4,7 +4,7 @@ pub fn part1(input: &str) -> usize {
 }
 
 // #[aoc(day__, part2)]
-// pub fn part2(input: &str) -> String {
+// pub fn part2(input: &str) -> usize {
 // }
 
 #[cfg(test)]
