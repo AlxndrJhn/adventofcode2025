@@ -1,8 +1,8 @@
+use regex::Regex;
+use std::collections::HashMap;
+
 #[aoc(day13, part1)]
 pub fn part1(input: &str) -> usize {
-    use regex::Regex;
-    use std::collections::HashMap;
-
     let re =
         Regex::new(r"^(\w+) would (gain|lose) (\d+) happiness units by sitting next to (\w+).$")
             .unwrap();
@@ -54,9 +54,65 @@ pub fn part1(input: &str) -> usize {
     max_happiness as usize
 }
 
-// #[aoc(day13, part2)]
-// pub fn part2(input: &str) -> String {
-// }
+#[aoc(day13, part2)]
+pub fn part2(input: &str) -> usize {
+    let re =
+        Regex::new(r"^(\w+) would (gain|lose) (\d+) happiness units by sitting next to (\w+).$")
+            .unwrap();
+    let mut happiness: HashMap<(&str, &str), isize> = HashMap::new();
+    let mut people: Vec<&str> = Vec::new();
+
+    for line in input.lines() {
+        if let Some(caps) = re.captures(line) {
+            let person1 = caps.get(1).unwrap().as_str();
+            let gain_lose = caps.get(2).unwrap().as_str();
+            let units: isize = caps.get(3).unwrap().as_str().parse().unwrap();
+            let person2 = caps.get(4).unwrap().as_str();
+
+            let value = if gain_lose == "gain" { units } else { -units };
+            happiness.insert((person1, person2), value);
+
+            if !people.contains(&person1) {
+                people.push(person1);
+            }
+            if !people.contains(&person2) {
+                people.push(person2);
+            }
+        }
+    }
+
+    let me = "Me";
+    for &person in &people {
+        happiness.insert((me, person), 0);
+        happiness.insert((person, me), 0);
+    }
+    people.push(me);
+
+    fn calculate_total_happiness(
+        arrangement: &[&str],
+        happiness: &HashMap<(&str, &str), isize>,
+    ) -> isize {
+        let mut total = 0;
+        for i in 0..arrangement.len() {
+            let left = arrangement[i];
+            let right = arrangement[(i + 1) % arrangement.len()];
+            total += happiness.get(&(left, right)).unwrap_or(&0);
+            total += happiness.get(&(right, left)).unwrap_or(&0);
+        }
+        total
+    }
+
+    let mut max_happiness = isize::MIN;
+    let permutations = permutohedron::Heap::new(&mut people);
+    for arrangement in permutations {
+        let total_happiness = calculate_total_happiness(&arrangement, &happiness);
+        if total_happiness > max_happiness {
+            max_happiness = total_happiness;
+        }
+    }
+
+    max_happiness as usize
+}
 
 #[cfg(test)]
 mod tests {
