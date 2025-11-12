@@ -9,6 +9,7 @@ dependencies = [
  "aoc-runner",
  "aoc-runner-derive",
  "permute",
+ "permutohedron",
  "regex",
  "rust-crypto",
  "serde_json",
@@ -103,6 +104,12 @@ name = "permute"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fddb8f2cf68c74002bde337a2472e18c870e3464b1f637cc9718f51687e88ca"
+
+[[package]]
+name = "permutohedron"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b687ff7b5da449d39e418ad391e5e08da53ec334903ddbb921db208908fc372c"
 
 [[package]]
 name = "proc-macro2"
