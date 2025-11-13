@@ -1,4 +1,4 @@
-pub fn count_on_after_interations(input: &str, iterations: usize) -> usize {
+pub fn count_on_after_interations(input: &str, iterations: usize, keeping_corners: bool) -> usize {
     let grid_is_on: Vec<Vec<bool>> = input
         .trim()
         .lines()
@@ -21,6 +21,13 @@ pub fn count_on_after_interations(input: &str, iterations: usize) -> usize {
     let mut current_grid = grid_is_on;
     let height = current_grid.len() as isize;
     let width = current_grid[0].len() as isize;
+
+    if keeping_corners {
+        current_grid[0][0] = true;
+        current_grid[0][(width - 1) as usize] = true;
+        current_grid[(height - 1) as usize][0] = true;
+        current_grid[(height - 1) as usize][(width - 1) as usize] = true;
+    }
 
     for _ in 0..iterations {
         let mut next_grid = current_grid.clone();
@@ -53,6 +60,12 @@ pub fn count_on_after_interations(input: &str, iterations: usize) -> usize {
                 }
             }
         }
+        if keeping_corners {
+            next_grid[0][0] = true;
+            next_grid[0][(width - 1) as usize] = true;
+            next_grid[(height - 1) as usize][0] = true;
+            next_grid[(height - 1) as usize][(width - 1) as usize] = true;
+        }
         current_grid = next_grid;
     }
     current_grid
@@ -63,12 +76,13 @@ pub fn count_on_after_interations(input: &str, iterations: usize) -> usize {
 
 #[aoc(day18, part1)]
 pub fn part1(input: &str) -> usize {
-    count_on_after_interations(input, 100)
+    count_on_after_interations(input, 100, false)
 }
 
-// #[aoc(day18, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day18, part2)]
+pub fn part2(input: &str) -> usize {
+    count_on_after_interations(input, 100, true)
+}
 
 #[cfg(test)]
 mod tests {
@@ -85,9 +99,28 @@ mod tests {
                     #.#..#
                     ####..
 ",
-                4
+                4,
+                false
             ),
             4
+        );
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            count_on_after_interations(
+                "   .#.#.#
+                    ...##.
+                    #....#
+                    ..#...
+                    #.#..#
+                    ####..
+",
+                5,
+                true
+            ),
+            17
         );
     }
 }
