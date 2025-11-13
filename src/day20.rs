@@ -14,9 +14,21 @@ pub fn part1(input: &str) -> usize {
     }
 }
 
-// #[aoc(day20, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day20, part2)]
+pub fn part2(input: &str) -> usize {
+    let target: usize = input.trim().parse().unwrap();
+    let mut house = 1;
+    loop {
+        let presents = (1..=house)
+            .filter(|elf| house % elf == 0 && house / elf <= 50)
+            .map(|elf| elf * 11)
+            .sum::<usize>();
+        if presents >= target {
+            return house;
+        }
+        house += 1;
+    }
+}
 
 #[cfg(test)]
 mod tests {
