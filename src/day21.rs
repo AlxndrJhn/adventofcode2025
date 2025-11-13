@@ -218,9 +218,130 @@ pub fn part1(input: &str) -> usize {
     get_lowest_cost(input, 100)
 }
 
-// #[aoc(day21, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+pub fn dfs_max_lost(
+    items: &Vec<Item>,
+    index: usize,
+    selected: &mut Vec<&Item>,
+    player_hit_points: isize,
+    boss: &Character,
+    max_cost: &mut usize,
+) {
+    if index == items.len() {
+        let total_cost: usize = selected.iter().map(|item| item.cost).sum();
+        let total_damage: usize = selected.iter().map(|item| item.damage).sum();
+        let total_armor: usize = selected.iter().map(|item| item.armor).sum();
+        let player = Character {
+            hit_points: player_hit_points,
+            damage: total_damage,
+            armor: total_armor,
+        };
+        let has_no_weapon = selected
+            .iter()
+            .all(|item| !matches!(item.category, ItemCategory::Weapon));
+        if has_no_weapon {
+            return;
+        }
+
+        if total_cost <= *max_cost {
+            return;
+        }
+        if !battle(&player, boss) {
+            *max_cost = (*max_cost).max(total_cost);
+        }
+        return;
+    }
+
+    // Include the current item
+    let next_item = &items[index];
+    let has_no_weapon = selected
+        .iter()
+        .all(|item| !matches!(item.category, ItemCategory::Weapon));
+    let has_zero_armor = selected
+        .iter()
+        .all(|item| !matches!(item.category, ItemCategory::Armor));
+    let ring_count_lt_2 = selected
+        .iter()
+        .filter(|item| matches!(item.category, ItemCategory::Ring))
+        .count()
+        < 2;
+    let mut can_add_item = false;
+    match next_item.category {
+        ItemCategory::Weapon => {
+            if has_no_weapon {
+                can_add_item = true;
+            }
+        }
+        ItemCategory::Armor => {
+            if has_zero_armor {
+                can_add_item = true;
+            }
+        }
+        ItemCategory::Ring => {
+            if ring_count_lt_2 {
+                can_add_item = true;
+            }
+        }
+    }
+    if can_add_item {
+        let mut selected_copy: Vec<&Item> = selected.clone();
+        selected_copy.push(&items[index]);
+        dfs_max_lost(
+            items,
+            index + 1,
+            &mut selected_copy,
+            player_hit_points,
+            boss,
+            max_cost,
+        );
+    }
+
+    dfs_max_lost(
+        items,
+        index + 1,
+        selected,
+        player_hit_points,
+        boss,
+        max_cost,
+    );
+}
+
+pub fn get_highest_lost_cost(input: &str, player_hitpoints: isize) -> usize {
+    let items = get_shop_items();
+    let mut boss_stats = Character {
+        hit_points: 0,
+        damage: 0,
+        armor: 0,
+    };
+    for line in input.trim().lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        let value = parts[1].trim().parse().unwrap();
+        if parts[0].trim() == "Hit Points" {
+            boss_stats.hit_points = value;
+        }
+        if parts[0].trim() == "Damage" {
+            boss_stats.damage = value as usize;
+        }
+        if parts[0].trim() == "Armor" {
+            boss_stats.armor = value as usize;
+        }
+    }
+    let mut max_cost = usize::MIN;
+    let mut selected: Vec<&Item> = Vec::new();
+    dfs_max_lost(
+        &items,
+        0,
+        &mut selected,
+        player_hitpoints,
+        &boss_stats,
+        &mut max_cost,
+    );
+    max_cost
+}
+
+#[aoc(day21, part2)]
+pub fn part2(input: &str) -> usize {
+    get_highest_lost_cost(input, 100)
+}
 
 #[cfg(test)]
 mod tests {
