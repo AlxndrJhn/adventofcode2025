@@ -11,3 +11,4 @@ cp $TEMPLATE_FILE $DAY_FILE
 sed -i "s/day__/day${DAY_NUM}/g" $DAY_FILE
 grep -q "pub mod day${DAY_NUM};" $LIB_FILE || sed -i "$(( $(wc -l < $LIB_FILE) - 3 ))i pub mod day${DAY_NUM};" $LIB_FILE
 echo "https://adventofcode.com/2015/day/${DAY_NUM}"
+code $DAY_FILE
