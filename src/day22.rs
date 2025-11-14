@@ -6,6 +6,7 @@ pub enum GameResult {
     BossWin,
     NotEnoughSpells,
     NotEnoughMana,
+    SpellAlreadyActive,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -83,13 +84,27 @@ pub struct Character {
     current_effects: Vec<Spell>,
 }
 
-pub fn battle(player: &mut Character, boss: &mut Character, verbose: bool) -> GameResult {
+pub fn battle(
+    player: &mut Character,
+    boss: &mut Character,
+    verbose: bool,
+    loose_1hp: bool,
+) -> GameResult {
     for round in 0.. {
         if verbose {
             println!(
                 "-- Player turn --\n- Player has {} hit points, {} armor, {} mana\n- Boss has {} hit points",
                 player.hit_points, player.armor, player.mana, boss.hit_points
             );
+        }
+        if loose_1hp {
+            player.hit_points -= 1;
+            if player.hit_points <= 0 {
+                if verbose {
+                    println!("Player is defeated!");
+                }
+                return GameResult::BossWin;
+            }
         }
         process_current_effects(player, verbose);
         process_current_effects(boss, verbose);
@@ -132,17 +147,38 @@ pub fn battle(player: &mut Character, boss: &mut Character, verbose: bool) -> Ga
                 if verbose {
                     println!("Player casts Shield.");
                 }
+                if player
+                    .current_effects
+                    .iter()
+                    .any(|s| s.name == SpellName::Shield)
+                {
+                    return GameResult::SpellAlreadyActive;
+                }
                 player.current_effects.push(spell.clone());
             }
             SpellName::Poison => {
                 if verbose {
                     println!("Player casts Poison.");
                 }
+                if boss
+                    .current_effects
+                    .iter()
+                    .any(|s| s.name == SpellName::Poison)
+                {
+                    return GameResult::SpellAlreadyActive;
+                }
                 boss.current_effects.push(spell.clone());
             }
             SpellName::Recharge => {
                 if verbose {
                     println!("Player casts Recharge.");
+                }
+                if player
+                    .current_effects
+                    .iter()
+                    .any(|s| s.name == SpellName::Recharge)
+                {
+                    return GameResult::SpellAlreadyActive;
                 }
                 player.current_effects.push(spell.clone());
             }
@@ -187,7 +223,6 @@ pub fn battle(player: &mut Character, boss: &mut Character, verbose: bool) -> Ga
 }
 
 fn process_current_effects(character: &mut Character, verbose: bool) {
-    character.armor = 0;
     for effect_spell in character.current_effects.iter_mut() {
         if effect_spell.duration == 0 {
             panic!("Effect spell with zero duration in current effects");
@@ -201,7 +236,11 @@ fn process_current_effects(character: &mut Character, verbose: bool) {
                         effect_spell.duration - 1
                     );
                 }
-                character.armor += effect_spell.armor;
+                if effect_spell.duration == SHIELD.duration {
+                    character.armor += effect_spell.armor;
+                } else if effect_spell.duration == 1 {
+                    character.armor -= effect_spell.armor;
+                }
             }
             SpellName::Poison => {
                 if verbose {
@@ -241,6 +280,7 @@ pub fn dfs_min_mana(
     boss_hp: isize,
     boss_damage: usize,
     min_mana_used: &mut usize,
+    loose_1hp: bool,
 ) {
     let mana_used: usize = player_spell_sequence.iter().map(|s| s.mana_cost).sum();
     if mana_used >= *min_mana_used {
@@ -262,7 +302,7 @@ pub fn dfs_min_mana(
         spell_sequence: vec![],
         current_effects: vec![],
     };
-    match battle(&mut player, &mut boss, false) {
+    match battle(&mut player, &mut boss, false, loose_1hp) {
         GameResult::PlayerWin => {
             let mana_used: usize = player_spell_sequence.iter().map(|s| s.mana_cost).sum();
             if mana_used < *min_mana_used {
@@ -276,20 +316,12 @@ pub fn dfs_min_mana(
             return;
         }
         GameResult::NotEnoughSpells => {}
-    }
-
-    let mut available_next_spells = vec![MAGIC_MISSILE, DRAIN];
-    for spell_to_check in &[SHIELD, POISON, RECHARGE] {
-        let already_active = player_spell_sequence
-            .iter()
-            .rev()
-            .take(3)
-            .any(|s| s.name == spell_to_check.name);
-        if !already_active {
-            available_next_spells.push(*spell_to_check);
+        GameResult::SpellAlreadyActive => {
+            return;
         }
     }
 
+    let available_next_spells = vec![MAGIC_MISSILE, DRAIN, SHIELD, POISON, RECHARGE];
     for next_spell in available_next_spells {
         let mut new_player_spell_sequence = player_spell_sequence.clone();
         new_player_spell_sequence.push(next_spell);
@@ -300,6 +332,7 @@ pub fn dfs_min_mana(
             boss_hp,
             boss_damage,
             min_mana_used,
+            loose_1hp,
         );
     }
 }
@@ -320,13 +353,45 @@ pub fn part1(input: &str) -> usize {
     }
 
     let mut least_mana_used = usize::MAX;
-    dfs_min_mana(50, 500, vec![], boss_hp, boss_damage, &mut least_mana_used);
+    dfs_min_mana(
+        50,
+        500,
+        vec![],
+        boss_hp,
+        boss_damage,
+        &mut least_mana_used,
+        false,
+    );
     least_mana_used
 }
 
-// #[aoc(day22, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day22, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut boss_hp = 0;
+    let mut boss_damage = 0;
+    for line in input.trim().lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        let value = parts[1].trim().parse().unwrap();
+        if parts[0].trim() == "Hit Points" {
+            boss_hp = value;
+        }
+        if parts[0].trim() == "Damage" {
+            boss_damage = value as usize;
+        }
+    }
+
+    let mut least_mana_used = usize::MAX;
+    dfs_min_mana(
+        50,
+        500,
+        vec![],
+        boss_hp,
+        boss_damage,
+        &mut least_mana_used,
+        true,
+    );
+    least_mana_used
+}
 
 #[cfg(test)]
 mod tests {
@@ -350,7 +415,10 @@ mod tests {
             spell_sequence: vec![],
             current_effects: vec![],
         };
-        assert_eq!(battle(&mut player, &mut boss, false), GameResult::PlayerWin);
+        assert_eq!(
+            battle(&mut player, &mut boss, false, false),
+            GameResult::PlayerWin
+        );
     }
 
     #[test]
@@ -371,6 +439,9 @@ mod tests {
             spell_sequence: vec![],
             current_effects: vec![],
         };
-        assert_eq!(battle(&mut player, &mut boss, false), GameResult::PlayerWin);
+        assert_eq!(
+            battle(&mut player, &mut boss, false, false),
+            GameResult::PlayerWin
+        );
     }
 }
