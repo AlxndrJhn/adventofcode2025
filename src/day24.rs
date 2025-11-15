@@ -1,7 +1,7 @@
-pub fn get_lowest_qe(input: &str) -> usize {
+pub fn get_lowest_qe(input: &str, groups: usize) -> usize {
     let packages: Vec<usize> = input.lines().map(|line| line.parse().unwrap()).collect();
     let total_weight: usize = packages.iter().sum();
-    let group_weight = total_weight / 3;
+    let group_weight = total_weight / groups;
 
     let mut lowest_qe = usize::MAX;
     let n = packages.len();
@@ -39,12 +39,13 @@ pub fn get_lowest_qe(input: &str) -> usize {
 
 #[aoc(day24, part1)]
 pub fn part1(input: &str) -> usize {
-    get_lowest_qe(input)
+    get_lowest_qe(input, 3)
 }
 
-// #[aoc(day24, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day24, part2)]
+pub fn part2(input: &str) -> usize {
+    get_lowest_qe(input, 4)
+}
 
 #[cfg(test)]
 mod tests {
@@ -53,5 +54,10 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(part1("1\n2\n3\n4\n5\n7\n8\n9\n10\n11"), 99);
+    }
+
+    #[test]
+    fn example_2() {
+        assert_eq!(part2("1\n2\n3\n4\n5\n7\n8\n9\n10\n11"), 44);
     }
 }
