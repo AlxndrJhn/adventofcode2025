@@ -1,6 +1,5 @@
-#[aoc(day23, part1)]
-pub fn part1(input: &str) -> usize {
-    let mut a: usize = 0;
+pub fn process_input(input: &str, start_a: usize, return_b: bool) -> usize {
+    let mut a: usize = start_a;
     let mut b: usize = 0;
     let instructions: Vec<&str> = input.trim().lines().collect();
     let mut pc: isize = 0;
@@ -85,12 +84,22 @@ pub fn part1(input: &str) -> usize {
             _ => panic!("Unknown instruction"),
         }
     }
-    b
+    if return_b {
+        b
+    } else {
+        a
+    }
 }
 
-// #[aoc(day23, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day23, part1)]
+pub fn part1(input: &str) -> usize {
+    process_input(input, 0, true)
+}
+
+#[aoc(day23, part2)]
+pub fn part2(input: &str) -> usize {
+    process_input(input, 1, true)
+}
 
 #[cfg(test)]
 mod tests {
@@ -99,13 +108,15 @@ mod tests {
     #[test]
     fn example_1() {
         assert_eq!(
-            part1(
+            process_input(
                 "inc a
                 jio a, +2
                 tpl a
-                inc a"
+                inc a",
+                0,
+                false
             ),
-            0
+            2
         );
     }
 }
