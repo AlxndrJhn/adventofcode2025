@@ -1,5 +1,4 @@
 DAY_NUM=$1
-# if nothing provided, use today's date
 if [ -z "$DAY_NUM" ]; then
     DAY_NUM=$(date +%-d)
     echo "No day number provided, using today's date: $DAY_NUM"
@@ -10,5 +9,5 @@ TEMPLATE_FILE="src/day.rs"
 cp $TEMPLATE_FILE $DAY_FILE
 sed -i "s/day__/day${DAY_NUM}/g" $DAY_FILE
 grep -q "pub mod day${DAY_NUM};" $LIB_FILE || sed -i "$(( $(wc -l < $LIB_FILE) - 3 ))i pub mod day${DAY_NUM};" $LIB_FILE
-echo "https://adventofcode.com/2015/day/${DAY_NUM}"
+echo "https://adventofcode.com/2016/day/${DAY_NUM}"
 code $DAY_FILE
