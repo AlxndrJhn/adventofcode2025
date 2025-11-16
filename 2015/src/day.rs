@@ -1,9 +1,9 @@
-#[aoc(day1, part1)]
+#[aoc(day__, part1)]
 pub fn part1(input: &str) -> usize {
     0
 }
 
-// #[aoc(day1, part2)]
+// #[aoc(day__, part2)]
 // pub fn part2(input: &str) -> usize {
 // }
 
