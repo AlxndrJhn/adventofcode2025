@@ -18,9 +18,42 @@ pub fn part1(input: &str) -> usize {
     code.parse().unwrap()
 }
 
-// #[aoc(day2, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day2, part2)]
+pub fn part2(input: &str) -> String {
+    let mut location = (2, 0); // starting at '5' on the keypad
+    let keypad = [
+        ["", "", "1", "", ""],
+        ["", "2", "3", "4", ""],
+        ["5", "6", "7", "8", "9"],
+        ["", "A", "B", "C", ""],
+        ["", "", "D", "", ""],
+    ];
+    let mut code = String::new();
+    for line in input.trim().lines() {
+        for command in line.chars() {
+            match command {
+                'U' if location.0 > 0 && keypad[location.0 - 1][location.1] != "" => {
+                    location.0 -= 1
+                }
+                'D' if location.0 < 4 && keypad[location.0 + 1][location.1] != "" => {
+                    location.0 += 1
+                }
+                'L' if location.1 > 0 && keypad[location.0][location.1 - 1] != "" => {
+                    location.1 -= 1
+                }
+                'R' if location.1 < 4 && keypad[location.0][location.1 + 1] != "" => {
+                    location.1 += 1
+                }
+                _ => {}
+            }
+        }
+        if keypad[location.0][location.1] == "" {
+            panic!("Invalid keypad location");
+        }
+        code.push(keypad[location.0][location.1].chars().next().unwrap());
+    }
+    code
+}
 
 #[cfg(test)]
 mod tests {
@@ -37,6 +70,19 @@ mod tests {
 "
             ),
             1985
+        );
+    }
+    #[test]
+    fn example_2() {
+        assert_eq!(
+            part2(
+                "   ULL
+                    RRDDD
+                    LURDL
+                    UUUUD
+"
+            ),
+            "5DB3"
         );
     }
 }
