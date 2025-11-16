@@ -25,9 +25,62 @@ pub fn part1(input: &str) -> usize {
     (start_location.0.abs() + start_location.1.abs()) as usize
 }
 
-// #[aoc(day1, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day1, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut start_location: (isize, isize) = (0, 0);
+    let mut direction = 0; // 0 = north, 1 = east, 2 = south, 3 = west
+    let mut visited_locations = std::collections::HashSet::new();
+    visited_locations.insert(start_location.clone());
+
+    for instruction in input.split(", ") {
+        let (turn, distance) = instruction.split_at(1);
+        let distance: isize = distance.parse().unwrap();
+
+        direction = match turn {
+            "R" => (direction + 1) % 4,
+            "L" => (direction + 3) % 4,
+            _ => panic!("Invalid turn"),
+        };
+
+        match direction {
+            0 => {
+                for _ in 0..distance {
+                    start_location.1 += 1;
+                    if !visited_locations.insert(start_location.clone()) {
+                        return (start_location.0.abs() + start_location.1.abs()) as usize;
+                    }
+                }
+            }
+            1 => {
+                for _ in 0..distance {
+                    start_location.0 += 1;
+                    if !visited_locations.insert(start_location.clone()) {
+                        return (start_location.0.abs() + start_location.1.abs()) as usize;
+                    }
+                }
+            }
+            2 => {
+                for _ in 0..distance {
+                    start_location.1 -= 1;
+                    if !visited_locations.insert(start_location.clone()) {
+                        return (start_location.0.abs() + start_location.1.abs()) as usize;
+                    }
+                }
+            }
+            3 => {
+                for _ in 0..distance {
+                    start_location.0 -= 1;
+                    if !visited_locations.insert(start_location.clone()) {
+                        return (start_location.0.abs() + start_location.1.abs()) as usize;
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    unreachable!()
+}
 
 #[cfg(test)]
 mod tests {
@@ -44,5 +97,9 @@ mod tests {
     #[test]
     fn example_3() {
         assert_eq!(part1("R5, L5, R5, R3"), 12);
+    }
+    #[test]
+    fn example_4() {
+        assert_eq!(part2("R8, R4, R4, R8"), 4);
     }
 }
