@@ -1,7 +1,8 @@
 DAY_NUM=$1
 if [ -z "$DAY_NUM" ]; then
-    DAY_NUM=$(date +%-d)
-    echo "No day number provided, using today's date: $DAY_NUM"
+    # get the highest numbered day file
+    DAY_NUM=$(ls src/day*.rs | sed -E 's/src\/day([0-9]+)\.rs/\1/' | sort -n | tail -1)
+    DAY_NUM=$((DAY_NUM + 1))
 fi
 DAY_FILE="src/day${DAY_NUM}.rs"
 LIB_FILE="src/lib.rs"
