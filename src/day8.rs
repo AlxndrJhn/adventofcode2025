@@ -4,9 +4,12 @@ pub fn part1(input: &str) -> usize {
     count_lit_pixels(&screen)
 }
 
-// #[aoc(day8, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day8, part2)]
+pub fn part2(input: &str) -> usize {
+    let screen = render(input.trim(), 50, 6);
+    println!("{}", screen);
+    0
+}
 
 fn render(instructions: &str, width: usize, height: usize) -> String {
     let mut screen = vec![vec!['.'; width]; height];
