@@ -1,247 +1,171 @@
-use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-fn get_element_to_floor(input: &str) -> HashMap<String, String> {
-    let mut element_to_floor = HashMap::new();
-    for (i, line) in input.lines().enumerate() {
-        let floor = "F".to_string() + &(i + 1).to_string();
-        let line_parts = line.split_whitespace();
-        for (j, word) in line_parts.clone().enumerate() {
-            if word.ends_with("-compatible") {
-                let element = word.trim_end_matches("-compatible").to_string();
-                let chip = element + "M";
-                element_to_floor.insert(chip, floor.clone());
-            } else if word.starts_with("generator") {
-                let element = line_parts.clone().nth(j - 1).unwrap();
-                let gen = element.to_string() + "G";
-                element_to_floor.insert(gen, floor.clone());
-            }
-        }
-    }
-    element_to_floor.insert("E".to_string(), "F1".to_string());
-    element_to_floor
-}
-fn calculate_hash<T: Hash>(t: &T) -> u64 {
-    let mut s = DefaultHasher::new();
-    t.hash(&mut s);
-    s.finish()
-}
-fn dfs(
-    element_to_floor: HashMap<String, String>,
-    step_count: usize,
-    min_step_count: &mut usize,
-    state_to_min_step_count: &mut HashMap<u64, usize>,
-    current_sequence: String,
-    best_sequence: &mut HashMap<u64, String>,
-    valid_states: &mut HashMap<u64, bool>,
-    do_store_path: bool,
-) {
-    let mut items: Vec<String> = element_to_floor
-        .iter()
-        .map(|(k, v)| format!("{}:{}", k, v))
-        .collect();
-    items.sort();
-    let items_string = items.join("|");
-    let items_string_hash = calculate_hash(&items_string);
-    if valid_states.contains_key(&items_string_hash) {
-        if !valid_states[&items_string_hash] {
-            return;
-        }
-    } else {
-        let is_valid = is_valid_state(&element_to_floor);
-        valid_states.insert(items_string_hash, is_valid);
-        if !is_valid {
-            return;
-        }
-    }
-    if state_to_min_step_count.contains_key(&items_string_hash) {
-        if step_count >= state_to_min_step_count[&items_string_hash] {
-            return;
-        }
-    }
-    state_to_min_step_count.insert(items_string_hash, step_count);
-    if do_store_path {
-        best_sequence.insert(items_string_hash, current_sequence.clone());
-    }
-    if step_count >= *min_step_count {
-        return;
-    }
-    let all_on_fourth = element_to_floor.values().all(|floor| floor == "F4");
-    if all_on_fourth {
-        println!("Best sequence found: {}", step_count);
-        *min_step_count = step_count;
-        return;
-    }
+use std::collections::{HashMap, HashSet, VecDeque};
 
-    let mut potential_next_states: Vec<HashMap<String, String>> = Vec::new();
-    let mut potential_next_sequences: Vec<String> = Vec::new();
-    let elevator_floor = element_to_floor.get("E").unwrap().clone();
-    let directions = {
-        let mut dirs = Vec::new();
-        if elevator_floor != "F4" {
-            dirs.push(1); // up
-        }
-        if elevator_floor != "F1" {
-            dirs.push(-1); // down
-        }
-        dirs
-    };
-    let items_on_floor: Vec<String> = element_to_floor
-        .iter()
-        .filter(|(_, floor)| *floor == &elevator_floor)
-        .map(|(item, _)| item.clone())
-        .collect();
-    for &dir in &directions {
-        let new_floor_number =
-            elevator_floor.chars().nth(1).unwrap().to_digit(10).unwrap() as i32 + dir;
-        let new_floor = "F".to_string() + &new_floor_number.to_string();
-        for i in 0..items_on_floor.len() {
-            // move one item
-            if items_on_floor[i] == "E" {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct State {
+    elevator: usize,
+    floors: Vec<Vec<Item>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+enum Item {
+    Generator(String),
+    Microchip(String),
+}
+
+impl State {
+    fn is_valid(&self) -> bool {
+        for floor in &self.floors {
+            let generators: Vec<_> = floor
+                .iter()
+                .filter_map(|item| match item {
+                    Item::Generator(element) => Some(element),
+                    _ => None,
+                })
+                .collect();
+            if generators.is_empty() {
                 continue;
             }
-            let mut new_state = element_to_floor.clone();
-            new_state.insert("E".to_string(), new_floor.clone());
-            new_state.insert(items_on_floor[i].clone(), new_floor.clone());
-            potential_next_states.push(new_state);
-            if do_store_path {
-                let new_best_sequence_for_this = format!(
-                    "\n{}->{}(bring {}) ",
-                    elevator_floor, new_floor, items_on_floor[i]
-                );
-                potential_next_sequences
-                    .push(current_sequence.clone() + &new_best_sequence_for_this);
-            }
-
-            for j in i + 1..items_on_floor.len() {
-                if items_on_floor[j] == "E" {
-                    continue;
-                }
-                // move two items
-                let mut new_state = element_to_floor.clone();
-                new_state.insert("E".to_string(), new_floor.clone());
-                new_state.insert(items_on_floor[i].clone(), new_floor.clone());
-                new_state.insert(items_on_floor[j].clone(), new_floor.clone());
-                potential_next_states.push(new_state);
-                if do_store_path {
-                    let new_best_sequence_for_this = format!(
-                        "\n{}->{}(bring {}, {}) ",
-                        elevator_floor, new_floor, items_on_floor[i], items_on_floor[j]
-                    );
-                    potential_next_sequences
-                        .push(current_sequence.clone() + &new_best_sequence_for_this);
-                }
-            }
-        }
-    }
-    // sort potential_next_states by number of items on higher floors
-    let sorted_potential_next_states: Vec<HashMap<String, String>> = {
-        let mut states_with_scores: Vec<(HashMap<String, String>, usize)> = potential_next_states
-            .into_iter()
-            .map(|state| {
-                let score: usize = state
-                    .values()
-                    .map(|floor| match floor.as_str() {
-                        "F1" => 0,
-                        "F2" => 1,
-                        "F3" => 2,
-                        "F4" => 3,
-                        _ => 0,
-                    })
-                    .sum();
-                (state, score)
-            })
-            .collect();
-        states_with_scores.sort_by(|a, b| b.1.cmp(&a.1));
-        states_with_scores
-            .into_iter()
-            .map(|(state, _)| state)
-            .collect()
-    };
-    if do_store_path {
-        for (next_state, next_sequence) in sorted_potential_next_states
-            .iter()
-            .zip(potential_next_sequences.iter())
-        {
-            dfs(
-                next_state.clone(),
-                step_count + 1,
-                min_step_count,
-                state_to_min_step_count,
-                next_sequence.clone(),
-                best_sequence,
-                valid_states,
-                do_store_path,
-            );
-        }
-    } else {
-        for next_state in sorted_potential_next_states.iter() {
-            dfs(
-                next_state.clone(),
-                step_count + 1,
-                min_step_count,
-                state_to_min_step_count,
-                current_sequence.clone(),
-                best_sequence,
-                valid_states,
-                do_store_path,
-            );
-        }
-    }
-}
-
-fn is_valid_state(state: &HashMap<String, String>) -> bool {
-    let mut floor_to_items: HashMap<String, Vec<String>> = HashMap::new();
-    for (item, floor) in state.iter() {
-        if item == "E" {
-            continue;
-        }
-        floor_to_items
-            .entry(floor.clone())
-            .or_insert_with(Vec::new)
-            .push(item.clone());
-    }
-    for items in floor_to_items.values() {
-        let generators: Vec<&String> = items.iter().filter(|item| item.ends_with("G")).collect();
-        if !generators.is_empty() {
-            for item in items {
-                if item.ends_with("M") {
-                    let element = item.trim_end_matches("M");
-                    let corresponding_gen = element.to_string() + "G";
-                    if !items.contains(&corresponding_gen) {
+            for item in floor {
+                if let Item::Microchip(element) = item {
+                    if !generators.contains(&element) {
                         return false;
                     }
                 }
             }
         }
+        true
     }
-    true
+    fn is_goal(&self) -> bool {
+        self.floors[0].is_empty() && self.floors[1].is_empty() && self.floors[2].is_empty()
+    }
+    fn normalize(&self) -> State {
+        let mut element_map = HashMap::new();
+        let mut next_id = 0;
+        let mut normalized_floors = vec![Vec::new(); 4];
+        for (floor_idx, floor) in self.floors.iter().enumerate() {
+            for item in floor {
+                let element = match item {
+                    Item::Generator(e) | Item::Microchip(e) => e,
+                };
+                let id = element_map.entry(element.clone()).or_insert_with(|| {
+                    let id = next_id;
+                    next_id += 1;
+                    id
+                });
+                let normalized_item = match item {
+                    Item::Generator(_) => Item::Generator(id.to_string()),
+                    Item::Microchip(_) => Item::Microchip(id.to_string()),
+                };
+                normalized_floors[floor_idx].push(normalized_item);
+            }
+        }
+        for floor in &mut normalized_floors {
+            floor.sort();
+        }
+        State {
+            elevator: self.elevator,
+            floors: normalized_floors,
+        }
+    }
+}
+
+fn parse_input(input: &str) -> State {
+    let mut floors = vec![Vec::new(); 4];
+    for (idx, line) in input.lines().enumerate() {
+        if line.contains("nothing relevant") {
+            continue;
+        }
+        let parts: Vec<&str> = line.split(" contains ").collect();
+        if parts.len() < 2 {
+            continue;
+        }
+        let items_str = parts[1].trim_end_matches('.');
+        let words: Vec<&str> = items_str.split_whitespace().collect();
+        for i in 0..words.len() {
+            if words[i].ends_with("-compatible") {
+                let material = words[i].trim_end_matches("-compatible").to_string();
+                floors[idx].push(Item::Microchip(material));
+            } else if words[i].starts_with("generator") {
+                floors[idx].push(Item::Generator(words[i - 1].to_string()));
+            }
+        }
+    }
+    State {
+        elevator: 0,
+        floors,
+    }
+}
+
+fn solve(initial_state: State) -> usize {
+    let mut queue = VecDeque::new();
+    let mut visited = HashSet::new();
+    queue.push_back((initial_state.clone(), 0));
+    visited.insert(initial_state.normalize());
+    while let Some((state, steps)) = queue.pop_front() {
+        if state.is_goal() {
+            return steps;
+        }
+        let current_floor = state.elevator;
+        let items = &state.floors[current_floor];
+        let mut moves = Vec::new();
+        for i in 0..items.len() {
+            moves.push(vec![i]);
+        }
+        for i in 0..items.len() {
+            for j in i + 1..items.len() {
+                moves.push(vec![i, j]);
+            }
+        }
+        let mut directions = Vec::new();
+        if current_floor < 3 {
+            directions.push(1);
+        }
+        if current_floor > 0 {
+            let has_items_below = (0..current_floor).any(|f| !state.floors[f].is_empty());
+            if has_items_below {
+                directions.push(-1);
+            }
+        }
+        for direction in directions {
+            let new_floor = (current_floor as i32 + direction) as usize;
+            for move_indices in &moves {
+                let mut new_state = state.clone();
+                new_state.elevator = new_floor;
+                let mut moved_items = Vec::new();
+                for &idx in move_indices.iter().rev() {
+                    moved_items.push(new_state.floors[current_floor].remove(idx));
+                }
+                for item in moved_items {
+                    new_state.floors[new_floor].push(item);
+                }
+                if new_state.is_valid() {
+                    let normalized = new_state.normalize();
+                    if !visited.contains(&normalized) {
+                        visited.insert(normalized);
+                        queue.push_back((new_state, steps + 1));
+                    }
+                }
+            }
+        }
+    }
+    0
 }
 
 #[aoc(day11, part1)]
 pub fn part1(input: &str) -> usize {
-    let element_to_floor = get_element_to_floor(input);
-    let mut min_step_count = usize::MAX;
-    let mut state_to_min_step_count = HashMap::new();
-    let mut best_sequence = HashMap::new();
-    let current_sequence = String::new();
-    let mut valid_states = HashMap::new();
-    dfs(
-        element_to_floor,
-        0,
-        &mut min_step_count,
-        &mut state_to_min_step_count,
-        current_sequence,
-        &mut best_sequence,
-        &mut valid_states,
-        false,
-    );
-    min_step_count
+    let state = parse_input(input);
+    solve(state)
 }
 
-// #[aoc(day11, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day11, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut state = parse_input(input);
+    state.floors[0].push(Item::Generator("elerium".to_string()));
+    state.floors[0].push(Item::Microchip("elerium".to_string()));
+    state.floors[0].push(Item::Generator("dilithium".to_string()));
+    state.floors[0].push(Item::Microchip("dilithium".to_string()));
+    solve(state)
+}
 
 #[cfg(test)]
 mod tests {
