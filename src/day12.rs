@@ -8,10 +8,10 @@ fn target_to_index(target: &str) -> usize {
     }
 }
 
-#[aoc(day12, part1)]
-pub fn part1(input: &str) -> usize {
+pub fn solve_program(input: &str, initial_c: isize) -> usize {
     let mut pc: isize = 0;
     let mut registers = [0; 4];
+    registers[2] = initial_c;
     let program = input.lines().collect::<Vec<_>>();
     loop {
         let current_line = match program.get(pc as usize) {
@@ -61,9 +61,15 @@ pub fn part1(input: &str) -> usize {
     registers[0] as usize
 }
 
-// #[aoc(day12, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day12, part1)]
+pub fn part1(input: &str) -> usize {
+    solve_program(input, 0)
+}
+
+#[aoc(day12, part2)]
+pub fn part2(input: &str) -> usize {
+    solve_program(input, 1)
+}
 
 #[cfg(test)]
 mod tests {
