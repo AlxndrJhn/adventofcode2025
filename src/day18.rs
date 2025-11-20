@@ -3,9 +3,10 @@ pub fn part1(input: &str) -> usize {
     count_safe_tiles(input.trim(), 40)
 }
 
-// #[aoc(day18, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day18, part2)]
+pub fn part2(input: &str) -> usize {
+    count_safe_tiles(input.trim(), 400000)
+}
 
 fn count_safe_tiles(initial_row: &str, total_rows: usize) -> usize {
     let mut current_row: Vec<char> = initial_row.chars().collect();
