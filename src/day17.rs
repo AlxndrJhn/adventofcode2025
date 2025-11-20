@@ -102,9 +102,53 @@ pub fn part1(input: &str) -> String {
     shortest_path[input.len()..].to_string()
 }
 
-// #[aoc(day17, part2)]
-// pub fn part2(input: &str) -> usize {
-// }
+#[aoc(day17, part2)]
+pub fn part2(input: &str) -> usize {
+    let start = (0, 0);
+    let end = (3, 3);
+    let mut queue: Vec<((isize, isize), String)> = vec![];
+    queue.push((start, input.to_string()));
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut longest_path: Option<String> = None;
+    while !queue.is_empty() {
+        let (pos, path) = queue.remove(0);
+        if pos == end {
+            if longest_path.is_none() || path.len() > longest_path.as_ref().unwrap().len() {
+                longest_path = Some(path.clone());
+            }
+            continue;
+        }
+        let hash = hash(&path);
+        let door_states = hash_to_door_is_open(&hash);
+        for (i, dir) in [
+            Directions::Up,
+            Directions::Down,
+            Directions::Left,
+            Directions::Right,
+        ]
+        .iter()
+        .enumerate()
+        {
+            if door_states[i] {
+                let movement = dir_to_vec(dir);
+                let new_pos = (pos.0 + movement.0, pos.1 + movement.1);
+                if is_out_of_bounds(new_pos) {
+                    continue;
+                }
+                let mut new_path = path.clone();
+                new_path.push(dir_char(dir));
+                if !visited.contains(&new_path) {
+                    visited.insert(new_path.clone());
+                    queue.push((new_pos, new_path));
+                }
+            }
+        }
+    }
+    if longest_path.is_none() {
+        return 0;
+    }
+    longest_path.unwrap().len() - input.len()
+}
 
 #[cfg(test)]
 mod tests {
@@ -125,5 +169,17 @@ mod tests {
     #[test]
     fn example_4() {
         assert_eq!(part1("ulqzkmiv"), "DRURDRUDDLLDLUURRDULRLDUUDDDRR");
+    }
+    #[test]
+    fn example_5() {
+        assert_eq!(part2("ihgpwlah"), 370);
+    }
+    #[test]
+    fn example_6() {
+        assert_eq!(part2("kglvqrro"), 492);
+    }
+    #[test]
+    fn example_7() {
+        assert_eq!(part2("ulqzkmiv"), 830);
     }
 }
