@@ -10,14 +10,24 @@ if [ -z "$DAY_NUM" ]; then
         DAY_NUM=$((DAY_NUM + 1))
     fi
 fi
+
 cargo aoc input -d $DAY_NUM -y $YEAR
+code input/${YEAR}/day${DAY_NUM}.txt
+
 DAY_FILE="src/day${DAY_NUM}.rs"
-LIB_FILE="src/lib.rs"
 TEMPLATE_FILE="src/day.rs"
 cp $TEMPLATE_FILE $DAY_FILE
 sed -i "s/day__/day${DAY_NUM}/g" $DAY_FILE
+code $DAY_FILE
+
+LIB_FILE="src/lib.rs"
 sed -i 's/^pub mod/\/\/ pub mod/' $LIB_FILE
-grep -q "pub mod day${DAY_NUM};" $LIB_FILE || sed -i "$(( $(wc -l < $LIB_FILE) - 3 ))i pub mod day${DAY_NUM};" $LIB_FILE
+if ! grep -q "pub mod day${DAY_NUM};" $LIB_FILE; then
+    sed -i "$(( $(wc -l < $LIB_FILE) - 3 ))i pub mod day${DAY_NUM};" $LIB_FILE
+fi
+if grep -q "// pub mod day${DAY_NUM};" $LIB_FILE; then
+    sed -i "s/\/\/ pub mod day${DAY_NUM};/pub mod day${DAY_NUM};/" $LIB_FILE
+fi
+
 cargo fmt
 echo "https://adventofcode.com/${YEAR}/day/${DAY_NUM}"
-code $DAY_FILE
