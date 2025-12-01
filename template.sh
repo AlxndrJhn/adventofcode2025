@@ -1,5 +1,5 @@
 DAY_NUM=$1
-YEAR=2017
+YEAR=2025
 if [ -z "$DAY_NUM" ]; then
     if [ -z "$(ls src/day*.rs 2>/dev/null)" ]; then
         # if there are no dayXX files yet, start with day 1
