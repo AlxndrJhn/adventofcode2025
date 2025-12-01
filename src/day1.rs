@@ -1,37 +1,53 @@
 #[aoc(day1, part1)]
 pub fn part1(input: &str) -> usize {
-    let mut sum: usize = 0;
-    let digits: Vec<u32> = input
-        .trim()
-        .chars()
-        .filter_map(|c| c.to_digit(10))
-        .collect();
-    for i in 0..digits.len() - 1 {
-        if digits[i] == digits[i + 1] {
-            sum += digits[i] as usize;
+    let mut times_at_zero = 0;
+    let mut current = 50;
+    for line in input.lines() {
+        let step = line[1..].parse::<isize>().unwrap();
+        match line[0..1].as_ref() {
+            "L" => {
+                current -= step;
+            }
+            "R" => {
+                current += step;
+            }
+            _ => panic!("invalid input"),
+        }
+        current = (current + 100) % 100;
+        if current == 0 {
+            times_at_zero += 1;
         }
     }
-    if digits[0] == digits[digits.len() - 1] {
-        sum += digits[0] as usize;
-    }
-    sum
+    times_at_zero
 }
 
 #[aoc(day1, part2)]
 pub fn part2(input: &str) -> usize {
-    let mut sum: usize = 0;
-    let digits: Vec<u32> = input
-        .trim()
-        .chars()
-        .filter_map(|c| c.to_digit(10))
-        .collect();
-    let half_len = digits.len() / 2;
-    for i in 0..digits.len() {
-        if digits[i] == digits[(i + half_len) % digits.len()] {
-            sum += digits[i] as usize;
+    let mut times_at_zero = 0;
+    let mut current = 50;
+    for line in input.lines() {
+        let step = line[1..].parse::<isize>().unwrap();
+        let residue = step % 100;
+        let cycles = step / 100;
+        times_at_zero += cycles as usize;
+        match line[0..1].as_ref() {
+            "L" => {
+                if residue >= current && current != 0 {
+                    times_at_zero += 1;
+                }
+                current -= residue;
+            }
+            "R" => {
+                if residue >= 100 - current && current != 0 {
+                    times_at_zero += 1;
+                }
+                current += residue;
+            }
+            _ => panic!("invalid input"),
         }
+        current = (current + 100) % 100;
     }
-    sum
+    times_at_zero
 }
 
 #[cfg(test)]
@@ -39,18 +55,40 @@ mod tests {
     use super::*;
     #[test]
     fn example_1() {
-        assert_eq!(part1("1122"), 3);
+        assert_eq!(
+            part1(
+                "L68
+L30
+R48
+L5
+R60
+L55
+L1
+L99
+R14
+L82
+"
+            ),
+            3
+        );
     }
     #[test]
     fn example_2() {
-        assert_eq!(part1("1111"), 4);
-    }
-    #[test]
-    fn example_3() {
-        assert_eq!(part2("1212"), 6);
-    }
-    #[test]
-    fn example_4() {
-        assert_eq!(part2("1221"), 0);
+        assert_eq!(
+            part2(
+                "L68
+L30
+R48
+L5
+R60
+L55
+L1
+L99
+R14
+L82
+"
+            ),
+            6
+        );
     }
 }
